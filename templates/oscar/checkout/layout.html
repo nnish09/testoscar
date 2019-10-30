@@ -1,0 +1,152 @@
+{% extends "oscar/layout.html" %}
+{% load i18n %}
+{% load category_tags %}
+{% load currency_filters %}
+{% block layout %}
+<header class="main_menu home_menu">
+    <div class="container-fluid">
+        <div class="row align-items-center justify-content-center eshop">
+            <div class="col-lg-11">
+                <nav class="navbar navbar-expand-lg navbar-light">
+                    <a class="navbar-brand" href="{% url 'home1' %}"><h1 style="color:#2f7dfc;">ESHOP</h1></a>
+                    <button class="navbar-toggler" type="button" data-toggle="collapse"
+                        data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="menu_icon"><i class="fas fa-bars"></i></span>
+                    </button>
+
+                    <div class="collapse navbar-collapse main-menu-item" id="navbarSupportedContent">
+                        <ul class="navbar-nav">
+                           
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'home1' %}">Home</a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="{% url 'catalogue:index' %}" id="navbarDropdown_1"
+                                        role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                        Shop
+                                    </a>
+                                    <div class="dropdown-menu" aria-labelledby="navbarDropdown_1">
+                                        {% category_tree depth=2 as tree_categories %}
+                                        <a class="dropdown-item" href="{% url 'catalogue:index' %}">{% trans "All products" %}</a>
+                                        {% if tree_categories %}
+                                        {% for tree_category in tree_categories %}
+                                        {% if tree_category.has_children %}
+                                        <a class="dropdown-item" href="{{ tree_category.get_absolute_url }}">{{ tree_category.name }}</a>
+                                        {% else %}
+                                        <a class="dropdown-item" href="{{ tree_category.get_absolute_url }}">{{ tree_category.name }}</a>
+                                        {% endif %}
+                                        {% for close in tree_category.num_to_close %}
+                                        {% endfor %}
+                                        {% endfor %}
+                                    {% endif %}
+                                        
+                                    </div>
+                                </li>
+                                <li><a class="nav-link" href="{% url 'offer:list' %}">Offers</a></li>
+
+                            {% if user.is_authenticated %}
+                          
+                            <li><a class="nav-link" href="{% url 'basket:summary' %}">View Cart</a></li>
+                            <li class="nav-item">
+                                    {% if num_unread_notifications > 0 %}
+                                    {# If user has new notifications - we change account link to go to inbox #}
+                                    <a class="nav-link" href="{% url 'customer:notifications-inbox' %}">
+                                      Account  
+                
+                                        <span class="label label-warning">{{ num_unread_notifications }}</span>
+                                    </a>
+                                {% else %}
+                                    <a  class="nav-link" href="{% url 'customer:summary' %}">Account</a>
+                                {% endif %}
+                            </li>
+                            {% if user.is_staff or perms.partner.dashboard_access %}
+                            <li><a class="nav-link" href="{% url 'dashboard:index' %}">Dashboard</a></li>
+                            {% endif %}
+                            <li><a  class="nav-link" id="logout_link" href="{% url 'customer:logout' %}">Logout</a></li>
+        
+                        {% else %}
+                            <li><a class="nav-link" id="login_link" href="{% url 'customer:login' %}">Login or register</a></li>
+                        {% endif %}
+                            
+
+                        </ul>
+                    </div>
+                    <div class="hearer_icon d-flex">
+                        
+                                <a href="{% url 'basket:summary' %}"><i class="ti-shopping-cart"></i></a>
+                                {% trans "Basket" %}
+                            {% if not request.basket.is_empty %}
+                                {% if request.basket.is_tax_known %}
+                                    {% blocktrans with total=request.basket.total_incl_tax|currency:request.basket.currency %}
+                                        Total: {{ total }}
+                                    {% endblocktrans %}
+                                {% else %}
+                                    {% blocktrans with total=request.basket.total_excl_tax|currency:request.basket.currency %}
+                                        Total: {{ total }}
+                                    {% endblocktrans %}
+                                {% endif %}
+                            {% endif %}
+                            </a>
+                            <!-- <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                <div class="single_product">
+
+                                </div>
+                            </div> -->
+                      
+                        <a id="search_1" href="javascript:void(0)"><i class="ti-search"></i></a>
+                    </div>
+                </nav>
+            </div>
+        </div>
+    </div>
+    <div class="search_input" id="search_input_box">
+        <div class="container ">
+                <form method="get" action="{% url 'search:search' %}" class="navbar-form navbar-right">
+                        <div class="form-group">
+                            {{ search_form.q }}
+                        </div>
+                        <input type="submit" value="{% trans 'Search' %}" class="btn btn-default" />
+                    </form>
+                    
+        </div>
+    </div>
+</header>
+    <header class="header container-fluid">
+      
+        {% block checkout_nav %}{% endblock %}
+    </header><!-- /header -->
+
+    <div class="container-fluid page">
+       <div class="page_inner">
+            {% include 'oscar/partials/alert_messages.html' %}
+
+            <div class="sub-header">
+                <h1>{% block checkout_title %}{% endblock %}</h1>
+            </div>
+
+            <!-- The main nav on checkout pages contain links to modal flatpages -->
+            {% block modal %}
+                {% load flatpages %}
+                {% get_flatpages '/order/' as flatpages %}
+                {% for page in flatpages %}
+                <div id="{{ page.title|slugify }}" class="modal hide fade">
+                    <div class="modal-header">
+                        <a class="close" data-dismiss="modal">×</a>
+                        <h3>{{ page.title }}</h3>
+                    </div>
+                    <div class="modal-body">
+                        <div class="large-content">
+                            {{ page.content|safe }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% endblock %}
+
+            {% block content %}{% endblock %}
+
+        </div><!-- /page_inner -->
+    </div>
+    {% include "oscar/partials/footer_checkout.html" %}
+{% endblock %}
